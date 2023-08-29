@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="104820d9-9edb-405a-915d-fd6a0a331e01" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<apikit:config outboundHeadersMapName="outboundHeadersMapName" httpStatusVarName="httpStatus" doc:name="Router" doc:id="b1ce114b-45d7-4a48-a7a3-263ea9e308c2" name="Router" api="resource::ca6c543e-dbac-46c9-aaa5-59cfe1113e50:user-s-api:1.0.1:raml:zip:user-s-api.raml" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="8cf6249e-9b75-437a-8710-9e9f6d69bd2f" >
+		<db:generic-connection url="jdbc:postgresql://oregon-postgres.render.com:5432/gouthamdb_trqw" driverClassName="org.postgresql.Driver" user="gouthamdb_trqw_user" password="HKnLlHQCrfjnGzq8jUgnvwwSUQSwRtRo" />
+	</db:config>
+	<flow name="user-s-apiFlow" doc:id="b51982f0-ec0c-4a9a-8a3c-ddecc4fda40e" >
+		<http:listener doc:name="Listener" doc:id="fe0e5bd6-f8d9-4f5f-ac65-4868a57059f0" config-ref="HTTP_Listener_config" path="/api/*"/>
+		<apikit:router doc:name="APIkit Router" doc:id="486be905-379a-4ee5-847f-d85da4d85e5f" config-ref="Router"/>
+	</flow>
+	<flow name="get:\users:Router" doc:id="6eb72bae-d202-4672-b226-1cd3913ee3fd" >
+		<db:select doc:name="Select" doc:id="22f312db-3dfb-4e1b-a453-005166307680" config-ref="Database_Config">
+			<db:sql ><![CDATA[Select * from users]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="b637d582-dfa6-4596-a07b-cf953481ddc8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="get:\user\(id):Router" doc:id="f19ca815-935f-4dc4-a0a9-6ce6f52d443f" >
+		<db:select doc:name="Select" doc:id="9a55d920-84a6-4369-806b-894a739e624e" config-ref="Database_Config">
+			<db:sql ><![CDATA[Select * from users where id= :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[id: attributes.uriParams.id]]]></db:input-parameters>
+		
+</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="f0d0a22c-a238-4927-bc54-deea6fb6ec84" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
